@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
     },
     "complexity_range": {"min": 1.0, "max": 2.5},
     "laser_speed_factor": 200.0,
+    "material_margin": 0.10,  # 10% markup on material cost
     "ref_price_per_kg": {
         "steel_mild": 0.90,
         "corten": 1.40,

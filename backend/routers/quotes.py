@@ -30,12 +30,15 @@ def run_calculation(activities: list[dict], config: dict) -> dict:
 
     has_estimates = any(line.get("is_estimated", False) for line in all_lines)
     total_ht = round(sum(line["amount"] for line in all_lines), 2)
+    material_cost_ht = round(sum(line["amount"] for line in all_lines if line.get("is_material")), 2)
     tax_rate = config.get("tax_rate", 0.22)
-    net_estimated = round(total_ht * (1 - tax_rate), 2)
+    # Net = (total HT − coût matière) × (1 − charges) : on ne gagne rien sur la matière
+    net_estimated = round((total_ht - material_cost_ht) * (1 - tax_rate), 2)
 
     return {
         "lines": all_lines,
         "total_ht": total_ht,
+        "material_cost_ht": material_cost_ht,
         "net_estimated": net_estimated,
         "has_estimates": has_estimates,
         "tax_rate": tax_rate,

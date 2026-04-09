@@ -65,6 +65,23 @@
           </n-form>
         </n-card>
 
+        <n-card title="Matière première">
+          <n-form label-placement="left" label-width="260">
+            <n-form-item label="Marge sur matière première (%)">
+              <n-input-number
+                :value="Math.round((materialMargin ?? 0.10) * 100)"
+                :min="0" :max="100" :step="1"
+                style="width: 160px"
+                @update:value="(v: number | null) => save('material_margin', (v ?? 10) / 100)"
+              />
+            </n-form-item>
+          </n-form>
+          <p class="settings-hint" style="margin-top: 4px">
+            Appliquée automatiquement sur le coût matière dans chaque devis.
+            Le net estimé exclut le coût matière (c'est un coût passé, pas du bénéfice).
+          </p>
+        </n-card>
+
         <n-card title="Prix de référence matière (€/kg)">
           <p class="settings-hint">
             Valeur de repli si aucun matériau avec prix renseigné n'existe pour ce type.
@@ -120,6 +137,7 @@ import { getAvgPricePerKg } from '../api'
 const configStore = useConfigStore()
 
 const taxRate = computed(() => configStore.config.tax_rate as number)
+const materialMargin = computed(() => configStore.config.material_margin as number)
 const hourlyRates = computed(() => (configStore.config.hourly_rates as Record<string, number>) ?? {})
 const plasmaRates = computed(() => (configStore.config.plasma_rates as Record<string, number>) ?? {})
 const postRates = computed(() => (configStore.config.post_process_rates as Record<string, number>) ?? {})

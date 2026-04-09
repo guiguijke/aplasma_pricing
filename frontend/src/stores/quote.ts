@@ -17,6 +17,7 @@ export interface PriceLine {
 export interface CalcResult {
   lines: PriceLine[]
   total_ht: number
+  material_cost_ht: number
   net_estimated: number
   has_estimates: boolean
   tax_rate: number

@@ -36,6 +36,7 @@ def calculate(params: dict, config: dict) -> list[dict]:
     # ── Material cost ────────────────────────────────────────────────────────
     sheet_area = params.get("sheet_area_m2", 0.0)
     purchase_price = params.get("purchase_price")
+    material_margin = config.get("material_margin", 0.0)
     is_estimated = False
 
     if sheet_area > 0:
@@ -63,10 +64,15 @@ def calculate(params: dict, config: dict) -> list[dict]:
         else:
             material_cost = price_per_unit * sheet_area
 
+        # Apply material margin
+        material_cost_with_margin = material_cost * (1 + material_margin)
+
+        margin_label = f" +{round(material_margin * 100)}% marge" if material_margin > 0 else ""
         lines.append({
-            "label": f"Matière — {params.get('material_name', 'tôle')} ({sheet_area} m²)",
-            "amount": round(material_cost, 2),
+            "label": f"Matière — {params.get('material_name', 'tôle')} ({sheet_area} m²){margin_label}",
+            "amount": round(material_cost_with_margin, 2),
             "is_estimated": is_estimated,
+            "is_material": True,
         })
 
     # ── Cutting cost ─────────────────────────────────────────────────────────

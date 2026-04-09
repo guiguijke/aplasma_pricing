@@ -102,8 +102,9 @@ class CalculateRequest(BaseModel):
 
 
 class CalculateResponse(BaseModel):
-    lines: list[dict]        # each line: label, amount, is_estimated
+    lines: list[dict]        # each line: label, amount, is_estimated, is_material?
     total_ht: float
+    material_cost_ht: float  # sum of material lines (excluded from net)
     net_estimated: float
     has_estimates: bool
     tax_rate: float
