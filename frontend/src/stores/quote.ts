@@ -27,6 +27,7 @@ export const useQuoteStore = defineStore('quote', () => {
   const activities = ref<Activity[]>([])
   const result = ref<CalcResult | null>(null)
   const notes = ref('')
+  const editingId = ref<number | null>(null)
 
   function addActivity(type: string) {
     const defaults: Record<string, unknown> = { type, id: crypto.randomUUID() }
@@ -69,20 +70,22 @@ export const useQuoteStore = defineStore('quote', () => {
     activities.value = []
     result.value = null
     notes.value = ''
+    editingId.value = null
   }
 
-  function loadFromQuote(quote: { reference: string; activities: Activity[]; notes: string }) {
+  function loadFromQuote(quote: { id?: number; reference: string; activities: Activity[]; notes: string }, forEdit = false) {
+    editingId.value = forEdit && quote.id ? quote.id : null
     reference.value = quote.reference
     activities.value = quote.activities.map(a => ({
       ...a,
       id: crypto.randomUUID(),
     }))
-    notes.value = quote.notes
+    notes.value = quote.notes ?? ''
     result.value = null
   }
 
   return {
-    reference, activities, result, notes,
+    reference, activities, result, notes, editingId,
     addActivity, removeActivity, updateActivity, runCalculate, reset, loadFromQuote,
   }
 })

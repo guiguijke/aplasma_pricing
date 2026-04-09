@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from database import engine, Base, SessionLocal
 from routers import config as config_router
 from routers import materials as materials_router
@@ -9,6 +10,17 @@ from routers.materials import seed_materials
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
+
+# Incremental migrations for columns added after initial deploy
+with engine.connect() as _conn:
+    for _stmt in [
+        "ALTER TABLE quotes ADD COLUMN lines JSON",
+    ]:
+        try:
+            _conn.execute(text(_stmt))
+            _conn.commit()
+        except Exception:
+            pass  # column already exists
 
 app = FastAPI(title="aplasma_pricing API", version="1.0.0")
 

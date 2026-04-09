@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Quote
-from schemas import QuoteCreate, QuoteOut, QuoteListItem, CalculateRequest, CalculateResponse
+from schemas import QuoteCreate, QuoteUpdate, QuoteOut, QuoteListItem, CalculateRequest, CalculateResponse
 from routers.config import get_full_config
 from calculators import plasma, welding, laser, scanning, post_process
 
@@ -63,8 +63,26 @@ def create_quote(body: QuoteCreate, db: Session = Depends(get_db)):
         net_estimated=body.net_estimated,
         has_estimates=1 if body.has_estimates else 0,
         notes=body.notes,
+        lines=body.lines,
     )
     db.add(quote)
+    db.commit()
+    db.refresh(quote)
+    return quote
+
+
+@router.put("/quotes/{quote_id}", response_model=QuoteOut)
+def update_quote(quote_id: int, body: QuoteUpdate, db: Session = Depends(get_db)):
+    quote = db.query(Quote).filter(Quote.id == quote_id).first()
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    quote.reference = body.reference
+    quote.activities = body.activities
+    quote.total_ht = body.total_ht
+    quote.net_estimated = body.net_estimated
+    quote.has_estimates = 1 if body.has_estimates else 0
+    quote.notes = body.notes
+    quote.lines = body.lines
     db.commit()
     db.refresh(quote)
     return quote

@@ -22,4 +22,6 @@ export const getQuotes = () => api.get('/quotes').then(r => r.data)
 export const getQuote = (id: number) => api.get(`/quotes/${id}`).then(r => r.data)
 export const saveQuote = (data: unknown) =>
   api.post('/quotes', data).then(r => r.data)
+export const updateQuote = (id: number, data: unknown) =>
+  api.put(`/quotes/${id}`, data).then(r => r.data)
 export const deleteQuote = (id: number) => api.delete(`/quotes/${id}`)

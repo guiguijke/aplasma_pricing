@@ -54,6 +54,17 @@ class QuoteCreate(BaseModel):
     net_estimated: float
     has_estimates: bool = False
     notes: str = ""
+    lines: Optional[list[dict]] = None
+
+
+class QuoteUpdate(BaseModel):
+    reference: str
+    activities: list[dict]
+    total_ht: float
+    net_estimated: float
+    has_estimates: bool = False
+    notes: str = ""
+    lines: Optional[list[dict]] = None
 
 
 class QuoteOut(BaseModel):
@@ -65,6 +76,7 @@ class QuoteOut(BaseModel):
     net_estimated: float
     has_estimates: bool
     notes: str
+    lines: Optional[list[dict]] = None
 
     model_config = {"from_attributes": True}
 

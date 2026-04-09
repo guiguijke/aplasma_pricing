@@ -14,6 +14,7 @@ class Quote(Base):
     net_estimated = Column(Float, nullable=False)
     has_estimates = Column(Integer, default=0)  # 1 if any line uses estimated material price
     notes = Column(Text, default="")
+    lines = Column(JSON, nullable=True)  # list of {label, amount, is_estimated} — saved at quote time
 
 
 class Material(Base):

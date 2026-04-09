@@ -13,6 +13,14 @@
     </div>
 
     <div v-if="store.result">
+      <n-alert
+        v-if="store.editingId"
+        type="info"
+        style="margin-bottom: 20px"
+      >
+        Modification du devis existant — cliquez sur "Mettre à jour" pour enregistrer les changements.
+      </n-alert>
+
       <n-card style="margin-bottom: 24px">
         <PriceBreakdown :result="store.result" />
       </n-card>
@@ -34,7 +42,7 @@
           style="font-weight: 600"
           @click="onSave"
         >
-          Enregistrer le devis
+          {{ store.editingId ? 'Mettre à jour le devis' : 'Enregistrer le devis' }}
         </n-button>
         <n-button size="large" @click="router.push({ name: 'new' })">
           Modifier
@@ -55,7 +63,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useQuoteStore } from '../stores/quote'
-import { saveQuote } from '../api'
+import { saveQuote, updateQuote } from '../api'
 import PriceBreakdown from '../components/ui/PriceBreakdown.vue'
 
 const router = useRouter()
@@ -67,15 +75,22 @@ async function onSave() {
   if (!store.result) return
   saving.value = true
   try {
-    await saveQuote({
+    const payload = {
       reference: store.reference,
       activities: store.activities,
       total_ht: store.result.total_ht,
       net_estimated: store.result.net_estimated,
       has_estimates: store.result.has_estimates,
       notes: store.notes,
-    })
-    message.success('Devis enregistré !')
+      lines: store.result.lines,
+    }
+    if (store.editingId) {
+      await updateQuote(store.editingId, payload)
+      message.success('Devis mis à jour !')
+    } else {
+      await saveQuote(payload)
+      message.success('Devis enregistré !')
+    }
     store.reset()
     router.push({ name: 'history' })
   } catch (e) {
