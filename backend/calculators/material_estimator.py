@@ -69,37 +69,65 @@ def weight_per_unit(product_type: str, dimensions: dict | None, thickness_mm: fl
     return volume * density
 
 
+def item_weight_kg(product_type: str, dimensions: dict | None, thickness_mm: float | None, material_type: str, unit: str) -> float:
+    """
+    Returns the total weight in kg for the item as purchased.
+    - Sheets: weight of the full sheet (dimensions width×height)
+    - Profiles (ml): weight per meter
+    - kg: 1 kg
+    """
+    if unit == "kg":
+        return 1.0
+    density = DENSITY.get(material_type, 7.85)
+    if product_type == "sheet" and dimensions:
+        # Full sheet area in m²
+        w_mm = dimensions.get("width", 1000)
+        h_mm = dimensions.get("height", 2000)
+        full_area_m2 = (w_mm * h_mm) / 1_000_000
+        volume = _volume_dm3("sheet", dimensions, thickness_mm, full_area_m2)
+        return volume * density
+    # Profiles: per meter
+    volume = _volume_dm3(product_type, dimensions or {}, thickness_mm, 1.0)
+    return volume * density
+
+
+def price_per_kg(purchase_price: float, product_type: str, dimensions: dict | None,
+                 thickness_mm: float | None, material_type: str, unit: str) -> float | None:
+    """Returns €/kg for a material with known purchase_price, or None."""
+    if purchase_price is None or purchase_price <= 0:
+        return None
+    w = item_weight_kg(product_type, dimensions, thickness_mm, material_type, unit)
+    if w <= 0:
+        return None
+    return round(purchase_price / w, 2)
+
+
 def compute_avg_price_per_kg(materials: list[dict]) -> dict[str, dict]:
     """
     From a list of material dicts (with purchase_price, unit, etc.),
     compute the average €/kg per material_type.
 
-    Returns {material_type: {"avg": float, "count": int, "samples": [...]}}
+    purchase_price semantics:
+    - Sheets (unit m²): price of the full sheet (not per m²)
+    - Profiles (unit ml): price per meter
+    - kg: price per kg
+
+    Returns {material_type: {"avg": float, "count": int, "min": float, "max": float}}
     """
     from collections import defaultdict
     buckets: dict[str, list[float]] = defaultdict(list)
 
     for mat in materials:
-        price = mat.get("purchase_price")
-        if price is None or price <= 0:
-            continue
-
-        unit = mat.get("unit", "m2")
-        mat_type = mat.get("material_type", "steel_mild")
-
-        if unit == "kg":
-            # Already €/kg
-            buckets[mat_type].append(price)
-        else:
-            # Convert: price_per_unit / weight_per_unit → €/kg
-            w = weight_per_unit(
-                mat.get("product_type", "sheet"),
-                mat.get("dimensions"),
-                mat.get("thickness_mm"),
-                mat_type,
-            )
-            if w > 0:
-                buckets[mat_type].append(price / w)
+        ppkg = price_per_kg(
+            mat.get("purchase_price"),
+            mat.get("product_type", "sheet"),
+            mat.get("dimensions"),
+            mat.get("thickness_mm"),
+            mat.get("material_type", "steel_mild"),
+            mat.get("unit", "m2"),
+        )
+        if ppkg is not None:
+            buckets[mat.get("material_type", "steel_mild")].append(ppkg)
 
     result = {}
     for mat_type, prices in buckets.items():

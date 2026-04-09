@@ -34,6 +34,10 @@ def calculate(params: dict, config: dict) -> list[dict]:
     lines = []
 
     # ── Material cost ────────────────────────────────────────────────────────
+    # purchase_price semantics:
+    #   sheets (m²)  → total price of the full sheet (TTC, auto-entrepreneur)
+    #   profiles (ml)→ price per meter
+    #   kg           → price per kg
     sheet_area = params.get("sheet_area_m2", 0.0)
     purchase_price = params.get("purchase_price")
     material_margin = config.get("material_margin", 0.0)
@@ -41,10 +45,20 @@ def calculate(params: dict, config: dict) -> list[dict]:
 
     if sheet_area > 0:
         if purchase_price is not None:
-            price_per_unit = float(purchase_price)
+            full_price = float(purchase_price)
+            full_dims = params.get("dimensions", {"width": 1000, "height": 2000})
+            full_area = (full_dims.get("width", 1000) * full_dims.get("height", 2000)) / 1_000_000
+
+            billing = params.get("sheet_billing", "partial")
+            if billing == "full" or sheet_area >= full_area:
+                material_cost = full_price
+            else:
+                # Pro-rata: price of the used portion
+                price_per_m2 = full_price / full_area if full_area > 0 else full_price
+                material_cost = price_per_m2 * sheet_area
         else:
             # Estimate from weight — use avg from DB materials if available
-            price_per_unit = estimate_price(
+            material_cost = estimate_price(
                 material_type=params.get("material_type", "steel_mild"),
                 product_type=params.get("product_type", "sheet"),
                 dimensions=params.get("dimensions"),
@@ -54,15 +68,6 @@ def calculate(params: dict, config: dict) -> list[dict]:
                 avg_price_per_kg=config.get("avg_price_per_kg"),
             )
             is_estimated = True
-
-        billing = params.get("sheet_billing", "partial")
-        if billing == "full":
-            # Price for the full standard sheet, prorate to billed area
-            full_dims = params.get("dimensions", {"width": 1000, "height": 2000})
-            full_area = (full_dims.get("width", 1000) * full_dims.get("height", 2000)) / 1_000_000
-            material_cost = price_per_unit * full_area if full_area > 0 else price_per_unit * sheet_area
-        else:
-            material_cost = price_per_unit * sheet_area
 
         # Apply material margin
         material_cost_with_margin = material_cost * (1 + material_margin)

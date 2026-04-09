@@ -98,7 +98,7 @@
         <n-form-item label="Unité" path="unit">
           <n-select v-model:value="form.unit" :options="unitOptions" />
         </n-form-item>
-        <n-form-item label="Prix achat (€/unité)" path="purchase_price">
+        <n-form-item :label="priceLabel" path="purchase_price">
           <n-input-number
             v-model:value="form.purchase_price"
             :min="0"
@@ -174,6 +174,54 @@ const unitOptions = [
   { label: 'kg', value: 'kg' },
   { label: 'mètre linéaire', value: 'ml' },
 ]
+
+// ── Density data for €/kg computation ────────────────────────────────────────
+
+const DENSITY: Record<string, number> = {
+  steel_mild: 7.85, corten: 7.85, stainless: 7.93, aluminum: 2.70,
+}
+
+/** Compute weight in kg for the full item as purchased */
+function itemWeightKg(row: any): number {
+  const density = DENSITY[row.material_type] ?? 7.85
+  const t = (row.thickness_mm ?? 3) / 10.0 // mm → dm
+
+  if (row.unit === 'kg') return 1.0
+
+  if (row.product_type === 'sheet' && row.dimensions) {
+    const wMm = row.dimensions.width ?? 1000
+    const hMm = row.dimensions.height ?? 2000
+    const areaDm2 = (wMm * hMm) / 1_000_000 * 100 // m² → dm²
+    return areaDm2 * t * density
+  }
+  // Profiles: weight per meter
+  const lengthDm = 10.0 // 1 meter = 10 dm
+  const dims = row.dimensions ?? {}
+  if (row.product_type === 'tube') {
+    const a = (dims.a ?? 40) / 10.0
+    const b = (dims.b ?? 40) / 10.0
+    const wall = t
+    const outer = a * b
+    const inner = Math.max((a - 2 * wall) * (b - 2 * wall), 0)
+    return (outer - inner) * lengthDm * density
+  }
+  if (['flat_bar', 'angle', 'channel'].includes(row.product_type)) {
+    const w = (dims.w ?? 30) / 10.0
+    return w * t * lengthDm * density
+  }
+  if (row.product_type === 'round_bar') {
+    const d = (dims.d ?? dims.w ?? 20) / 10.0 / 2.0
+    return Math.PI * d * d * lengthDm * density
+  }
+  return 0
+}
+
+function computePricePerKg(row: any): number | null {
+  if (row.purchase_price == null || row.purchase_price <= 0) return null
+  const w = itemWeightKg(row)
+  if (w <= 0) return null
+  return Math.round((row.purchase_price / w) * 100) / 100
+}
 
 // ── Short labels for auto-name ───────────────────────────────────────────────
 
@@ -254,6 +302,12 @@ const generatedName = computed(() => {
   if (form.value.suffix?.trim()) parts.push(`— ${form.value.suffix.trim()}`)
 
   return parts.join(' ')
+})
+
+const priceLabel = computed(() => {
+  if (form.value.product_type === 'sheet') return 'Prix achat tôle (€ TTC)'
+  if (form.value.unit === 'kg') return 'Prix achat (€/kg TTC)'
+  return 'Prix achat (€/ml TTC)'
 })
 
 // ── Build dimensions JSON from refs ──────────────────────────────────────────
@@ -341,12 +395,21 @@ const columns: DataTableColumns = [
     render: (row: any) => row.thickness_mm ? `${row.thickness_mm}` : '—',
   },
   {
-    title: 'Prix', key: 'purchase_price', width: 130, align: 'right',
+    title: 'Prix achat', key: 'purchase_price', width: 110, align: 'right',
     render: (row: any) =>
       row.purchase_price != null
-        ? h('span', { style: "font-family: 'Space Mono', monospace; font-size: 12px; color: #ab6715; font-weight: 700" },
-            `${row.purchase_price} €/${row.unit}`)
+        ? h('span', { style: { fontFamily: "'Space Mono', monospace", fontSize: '12px', color: '#ab6715', fontWeight: '700' } },
+            `${row.purchase_price.toFixed(2)} €`)
         : h(NTag, { type: 'warning', size: 'tiny' }, { default: () => 'Estimé *' }),
+  },
+  {
+    title: '€/kg', key: 'price_per_kg', width: 80, align: 'right',
+    render: (row: any) => {
+      const ppkg = computePricePerKg(row)
+      if (ppkg == null) return '—'
+      return h('span', { style: { fontFamily: "'Space Mono', monospace", fontSize: '12px', color: '#555', fontWeight: '600' } },
+        `${ppkg.toFixed(2)}`)
+    },
   },
   { title: 'MAJ', key: 'updated_at', width: 80, render: (row: any) => formatDate(row.updated_at) },
   {
