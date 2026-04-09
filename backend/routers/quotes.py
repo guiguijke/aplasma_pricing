@@ -32,8 +32,9 @@ def run_calculation(activities: list[dict], config: dict) -> dict:
     total_ht = round(sum(line["amount"] for line in all_lines), 2)
     material_cost_ht = round(sum(line["amount"] for line in all_lines if line.get("is_material")), 2)
     tax_rate = config.get("tax_rate", 0.22)
-    # Net = (total HT − coût matière) × (1 − charges) : on ne gagne rien sur la matière
-    net_estimated = round((total_ht - material_cost_ht) * (1 - tax_rate), 2)
+    # Auto-entrepreneur : charges calculées sur le CA total (pas sur la marge)
+    # Net = CA total − charges sur CA total − coût matière
+    net_estimated = round(total_ht * (1 - tax_rate) - material_cost_ht, 2)
 
     return {
         "lines": all_lines,

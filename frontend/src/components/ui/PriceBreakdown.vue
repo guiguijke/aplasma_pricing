@@ -24,30 +24,25 @@
         <span class="total-amount">{{ formatPrice(result.total_ht) }}</span>
       </div>
 
-      <div v-if="result.material_cost_ht > 0" class="net-detail">
+      <div class="net-detail">
         <div class="net-detail-row">
-          <span>Total HT</span>
+          <span>Total HT (CA encaissé)</span>
           <span class="mono">{{ formatPrice(result.total_ht) }}</span>
         </div>
         <div class="net-detail-row deduct">
+          <span>− Charges auto-entrepreneur ({{ Math.round(result.tax_rate * 100) }}% du CA)</span>
+          <span class="mono">{{ formatPrice(result.total_ht * result.tax_rate) }}</span>
+        </div>
+        <div v-if="result.material_cost_ht > 0" class="net-detail-row deduct">
           <span>− Coût matière</span>
           <span class="mono">{{ formatPrice(result.material_cost_ht) }}</span>
-        </div>
-        <div class="net-detail-row">
-          <span>= Marge brute</span>
-          <span class="mono">{{ formatPrice(result.total_ht - result.material_cost_ht) }}</span>
-        </div>
-        <div class="net-detail-row deduct">
-          <span>− Charges ({{ Math.round(result.tax_rate * 100) }}%)</span>
-          <span class="mono">{{ formatPrice((result.total_ht - result.material_cost_ht) * result.tax_rate) }}</span>
         </div>
       </div>
 
       <div class="total-block total-net">
         <span class="total-label">
           Net estimé
-          <span v-if="result.material_cost_ht > 0" class="net-hint">(hors matière, −{{ Math.round(result.tax_rate * 100) }}% charges)</span>
-          <span v-else class="net-hint">(−{{ Math.round(result.tax_rate * 100) }}% charges)</span>
+          <span class="net-hint">(ce qu'il te reste)</span>
         </span>
         <span class="total-amount">{{ formatPrice(result.net_estimated) }}</span>
       </div>
