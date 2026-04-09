@@ -12,7 +12,7 @@
                 :value="Math.round((taxRate ?? 0.22) * 100)"
                 :min="0" :max="60" :step="1"
                 style="width: 160px"
-                @update:value="v => save('tax_rate', (v ?? 22) / 100)"
+                @update:value="(v: number | null) => save('tax_rate', (v ?? 22) / 100)"
               />
             </n-form-item>
           </n-form>
@@ -25,7 +25,7 @@
                 :value="hourlyRates[key] ?? 0"
                 :min="0" :step="1"
                 style="width: 160px"
-                @update:value="v => saveHourlyRate(key, v ?? 0)"
+                @update:value="(v: number | null) => saveHourlyRate(key, v ?? 0)"
               />
             </n-form-item>
           </n-form>
@@ -38,7 +38,7 @@
                 :value="plasmaRates.cut_per_meter ?? 8"
                 :min="0" :step="0.1" :precision="2"
                 style="width: 160px"
-                @update:value="v => savePlasmaRate('cut_per_meter', v ?? 8)"
+                @update:value="(v: number | null) => savePlasmaRate('cut_per_meter', v ?? 8)"
               />
             </n-form-item>
             <n-form-item label="Coût par perçage (€)">
@@ -46,7 +46,7 @@
                 :value="plasmaRates.pierce_cost ?? 0.30"
                 :min="0" :step="0.05" :precision="3"
                 style="width: 160px"
-                @update:value="v => savePlasmaRate('pierce_cost', v ?? 0.30)"
+                @update:value="(v: number | null) => savePlasmaRate('pierce_cost', v ?? 0.30)"
               />
             </n-form-item>
           </n-form>
@@ -59,7 +59,7 @@
                 :value="postRates[key] ?? 0"
                 :min="0" :step="0.5" :precision="2"
                 style="width: 160px"
-                @update:value="v => savePostRate(key, v ?? 0)"
+                @update:value="(v: number | null) => savePostRate(key, v ?? 0)"
               />
             </n-form-item>
           </n-form>
@@ -72,7 +72,7 @@
                 :value="refPricePerKg[key] ?? 0"
                 :min="0" :step="0.05" :precision="2"
                 style="width: 160px"
-                @update:value="v => saveRefPrice(key, v ?? 0)"
+                @update:value="(v: number | null) => saveRefPrice(key, v ?? 0)"
               />
             </n-form-item>
           </n-form>
@@ -85,7 +85,7 @@
                 :value="laserSpeed ?? 200"
                 :min="1" :step="10"
                 style="width: 160px"
-                @update:value="v => configStore.save('laser_speed_factor', v ?? 200)"
+                @update:value="(v: number | null) => configStore.save('laser_speed_factor', v ?? 200)"
               />
             </n-form-item>
           </n-form>

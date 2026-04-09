@@ -20,7 +20,7 @@
         :is="moduleComponent(activity.type)"
         :activity="activity"
         :materials="materials"
-        @update="patch => store.updateActivity(activity.id, patch)"
+        @update="(patch: any) => store.updateActivity(activity.id, patch)"
         @remove="store.removeActivity(activity.id)"
       />
     </div>
