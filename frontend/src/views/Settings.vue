@@ -65,15 +65,31 @@
           </n-form>
         </n-card>
 
-        <n-card title="Prix de référence matière (€/kg) — pour les estimations">
+        <n-card title="Prix de référence matière (€/kg)">
+          <p class="settings-hint">
+            Valeur de repli si aucun matériau avec prix renseigné n'existe pour ce type.
+            Quand des prix sont saisis dans le catalogue, la moyenne calculée est utilisée en priorité.
+          </p>
           <n-form label-placement="left" label-width="220">
             <n-form-item v-for="[key, label] in matRefLabels" :key="key" :label="label">
-              <n-input-number
-                :value="refPricePerKg[key] ?? 0"
-                :min="0" :step="0.05" :precision="2"
-                style="width: 160px"
-                @update:value="(v: number | null) => saveRefPrice(key, v ?? 0)"
-              />
+              <div style="display: flex; align-items: center; gap: 16px">
+                <n-input-number
+                  :value="refPricePerKg[key] ?? 0"
+                  :min="0" :step="0.05" :precision="2"
+                  style="width: 140px"
+                  @update:value="(v: number | null) => saveRefPrice(key, v ?? 0)"
+                />
+                <div v-if="avgPrices[key]" class="avg-badge">
+                  <span class="avg-badge-value">{{ avgPrices[key].avg }} €/kg</span>
+                  <span class="avg-badge-detail">
+                    moy. calculée ({{ avgPrices[key].count }} réf.)
+                    <template v-if="avgPrices[key].count > 1">
+                      · {{ avgPrices[key].min }}–{{ avgPrices[key].max }}
+                    </template>
+                  </span>
+                </div>
+                <span v-else class="avg-badge-empty">Aucun prix renseigné</span>
+              </div>
             </n-form-item>
           </n-form>
         </n-card>
@@ -97,8 +113,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useConfigStore } from '../stores/config'
+import { getAvgPricePerKg } from '../api'
 
 const configStore = useConfigStore()
 
@@ -108,6 +125,16 @@ const plasmaRates = computed(() => (configStore.config.plasma_rates as Record<st
 const postRates = computed(() => (configStore.config.post_process_rates as Record<string, number>) ?? {})
 const refPricePerKg = computed(() => (configStore.config.ref_price_per_kg as Record<string, number>) ?? {})
 const laserSpeed = computed(() => configStore.config.laser_speed_factor as number)
+
+const avgPrices = ref<Record<string, { avg: number; count: number; min: number; max: number }>>({})
+
+onMounted(async () => {
+  try {
+    avgPrices.value = await getAvgPricePerKg()
+  } catch {
+    // silent — no averages to show
+  }
+})
 
 const rateLabels: [string, string][] = [
   ['welding_tig', 'Soudure TIG'],
@@ -151,3 +178,35 @@ function saveRefPrice(key: string, value: number) {
   configStore.save('ref_price_per_kg', { ...refPricePerKg.value, [key]: value })
 }
 </script>
+
+<style scoped>
+.settings-hint {
+  font-family: 'Figtree', sans-serif;
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+.avg-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.avg-badge-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ab6715;
+}
+.avg-badge-detail {
+  font-family: 'Figtree', sans-serif;
+  font-size: 11px;
+  color: #888;
+}
+.avg-badge-empty {
+  font-family: 'Figtree', sans-serif;
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+</style>

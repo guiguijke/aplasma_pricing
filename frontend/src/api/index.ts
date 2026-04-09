@@ -7,6 +7,7 @@ export const updateConfigKey = (key: string, value: unknown) =>
 
 // ── Materials ────────────────────────────────────────────────────────────────
 export const getMaterials = () => api.get('/materials').then(r => r.data)
+export const getAvgPricePerKg = () => api.get('/materials/avg-price-kg').then(r => r.data)
 export const createMaterial = (data: unknown) =>
   api.post('/materials', data).then(r => r.data)
 export const updateMaterial = (id: number, data: unknown) =>

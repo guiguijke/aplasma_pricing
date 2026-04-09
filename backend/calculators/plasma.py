@@ -42,7 +42,7 @@ def calculate(params: dict, config: dict) -> list[dict]:
         if purchase_price is not None:
             price_per_unit = float(purchase_price)
         else:
-            # Estimate from weight
+            # Estimate from weight — use avg from DB materials if available
             price_per_unit = estimate_price(
                 material_type=params.get("material_type", "steel_mild"),
                 product_type=params.get("product_type", "sheet"),
@@ -50,6 +50,7 @@ def calculate(params: dict, config: dict) -> list[dict]:
                 thickness_mm=params.get("thickness_mm"),
                 quantity=sheet_area,
                 ref_price_per_kg=params.get("ref_price_per_kg"),
+                avg_price_per_kg=config.get("avg_price_per_kg"),
             )
             is_estimated = True
 

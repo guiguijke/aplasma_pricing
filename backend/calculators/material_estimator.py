@@ -1,6 +1,9 @@
 """
 Estimates material price from weight when purchase_price is unknown.
 Densities in kg/dm³, reference market prices in €/kg (configurable via Settings).
+
+When materials with known prices exist in the database, computes an average €/kg
+per material_type to improve estimation accuracy.
 """
 
 # kg/dm³
@@ -59,6 +62,58 @@ def _volume_dm3(product_type: str, dimensions: dict, thickness_mm: float | None,
     return 0.03 * t * length_dm
 
 
+def weight_per_unit(product_type: str, dimensions: dict | None, thickness_mm: float | None, material_type: str) -> float:
+    """Returns weight in kg for 1 unit (1 m² for sheets, 1 ml for profiles, 1 for kg)."""
+    density = DENSITY.get(material_type, 7.85)
+    volume = _volume_dm3(product_type, dimensions or {}, thickness_mm, 1.0)
+    return volume * density
+
+
+def compute_avg_price_per_kg(materials: list[dict]) -> dict[str, dict]:
+    """
+    From a list of material dicts (with purchase_price, unit, etc.),
+    compute the average €/kg per material_type.
+
+    Returns {material_type: {"avg": float, "count": int, "samples": [...]}}
+    """
+    from collections import defaultdict
+    buckets: dict[str, list[float]] = defaultdict(list)
+
+    for mat in materials:
+        price = mat.get("purchase_price")
+        if price is None or price <= 0:
+            continue
+
+        unit = mat.get("unit", "m2")
+        mat_type = mat.get("material_type", "steel_mild")
+
+        if unit == "kg":
+            # Already €/kg
+            buckets[mat_type].append(price)
+        else:
+            # Convert: price_per_unit / weight_per_unit → €/kg
+            w = weight_per_unit(
+                mat.get("product_type", "sheet"),
+                mat.get("dimensions"),
+                mat.get("thickness_mm"),
+                mat_type,
+            )
+            if w > 0:
+                buckets[mat_type].append(price / w)
+
+    result = {}
+    for mat_type, prices in buckets.items():
+        if prices:
+            avg = round(sum(prices) / len(prices), 2)
+            result[mat_type] = {
+                "avg": avg,
+                "count": len(prices),
+                "min": round(min(prices), 2),
+                "max": round(max(prices), 2),
+            }
+    return result
+
+
 def estimate_price(
     material_type: str,
     product_type: str,
@@ -66,11 +121,21 @@ def estimate_price(
     thickness_mm: float | None,
     quantity: float,
     ref_price_per_kg: dict[str, float] | None = None,
+    avg_price_per_kg: dict[str, dict] | None = None,
 ) -> float:
-    """Returns estimated price in € for the given quantity."""
-    refs = ref_price_per_kg or DEFAULT_REF_PRICE_PER_KG
+    """
+    Returns estimated price in € for the given quantity.
+    Priority: avg from DB materials > config ref > hardcoded default.
+    """
+    # Pick best available reference price
+    if avg_price_per_kg and material_type in avg_price_per_kg:
+        ref = avg_price_per_kg[material_type]["avg"]
+    elif ref_price_per_kg and material_type in ref_price_per_kg:
+        ref = ref_price_per_kg[material_type]
+    else:
+        ref = DEFAULT_REF_PRICE_PER_KG.get(material_type, 1.0)
+
     density = DENSITY.get(material_type, 7.85)
-    ref = refs.get(material_type, 1.0)
     volume = _volume_dm3(product_type, dimensions or {}, thickness_mm, quantity)
     weight_kg = volume * density
     return round(weight_kg * ref, 2)

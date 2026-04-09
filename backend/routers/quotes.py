@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Quote
+from models import Quote, Material
 from schemas import QuoteCreate, QuoteUpdate, QuoteOut, QuoteListItem, CalculateRequest, CalculateResponse
 from routers.config import get_full_config
 from calculators import plasma, welding, laser, scanning, post_process
+from calculators.material_estimator import compute_avg_price_per_kg
 
 router = APIRouter(prefix="/api", tags=["quotes"])
 
@@ -46,6 +47,14 @@ def calculate(body: CalculateRequest, db: Session = Depends(get_db)):
     config = get_full_config(db)
     if body.tax_rate is not None:
         config["tax_rate"] = body.tax_rate
+    # Compute dynamic avg €/kg from materials with known prices
+    rows = db.query(Material).filter(Material.purchase_price.isnot(None)).all()
+    mat_dicts = [
+        {"purchase_price": m.purchase_price, "unit": m.unit, "material_type": m.material_type,
+         "product_type": m.product_type, "dimensions": m.dimensions, "thickness_mm": m.thickness_mm}
+        for m in rows
+    ]
+    config["avg_price_per_kg"] = compute_avg_price_per_kg(mat_dicts)
     return run_calculation(body.activities, config)
 
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Material
 from schemas import MaterialCreate, MaterialOut, MaterialUpdate
+from calculators.material_estimator import compute_avg_price_per_kg
 
 router = APIRouter(prefix="/api/materials", tags=["materials"])
 
@@ -51,6 +52,24 @@ def seed_materials(db: Session):
 @router.get("", response_model=list[MaterialOut])
 def list_materials(db: Session = Depends(get_db)):
     return db.query(Material).order_by(Material.material_type, Material.product_type, Material.name).all()
+
+
+@router.get("/avg-price-kg")
+def avg_price_per_kg(db: Session = Depends(get_db)):
+    """Compute average €/kg per material_type from materials with known prices."""
+    rows = db.query(Material).filter(Material.purchase_price.isnot(None)).all()
+    materials = [
+        {
+            "purchase_price": m.purchase_price,
+            "unit": m.unit,
+            "material_type": m.material_type,
+            "product_type": m.product_type,
+            "dimensions": m.dimensions,
+            "thickness_mm": m.thickness_mm,
+        }
+        for m in rows
+    ]
+    return compute_avg_price_per_kg(materials)
 
 
 @router.post("", response_model=MaterialOut, status_code=201)
