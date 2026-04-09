@@ -22,6 +22,10 @@ export interface CalcResult {
   tax_rate: number
 }
 
+function uid(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
+}
+
 export const useQuoteStore = defineStore('quote', () => {
   const reference = ref('')
   const activities = ref<Activity[]>([])
@@ -30,7 +34,7 @@ export const useQuoteStore = defineStore('quote', () => {
   const editingId = ref<number | null>(null)
 
   function addActivity(type: string) {
-    const defaults: Record<string, unknown> = { type, id: crypto.randomUUID() }
+    const defaults: Record<string, unknown> = { type, id: uid() }
     if (type === 'plasma') {
       Object.assign(defaults, {
         cut_length_mm: 0, pierce_count: 0,
@@ -78,7 +82,7 @@ export const useQuoteStore = defineStore('quote', () => {
     reference.value = quote.reference
     activities.value = quote.activities.map(a => ({
       ...a,
-      id: crypto.randomUUID(),
+      id: uid(),
     }))
     notes.value = quote.notes ?? ''
     result.value = null
