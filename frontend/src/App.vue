@@ -1,6 +1,7 @@
 <template>
   <n-config-provider :theme-overrides="(themeOverrides as any)">
     <n-global-style />
+    <n-message-provider>
     <div class="app-shell">
       <header class="app-header">
         <router-link to="/" class="brand">
@@ -20,10 +21,13 @@
         <router-view />
       </main>
     </div>
+    </n-message-provider>
   </n-config-provider>
 </template>
 
 <script setup lang="ts">
+import { NMessageProvider } from 'naive-ui'
+
 const themeOverrides = {
   common: {
     primaryColor: '#ab6715',
