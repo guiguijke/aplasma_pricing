@@ -15,6 +15,8 @@ Base.metadata.create_all(bind=engine)
 with engine.connect() as _conn:
     for _stmt in [
         "ALTER TABLE quotes ADD COLUMN lines JSON",
+        "ALTER TABLE materials ADD COLUMN finish TEXT NOT NULL DEFAULT 'brut'",
+        "ALTER TABLE materials ADD COLUMN suffix TEXT",
     ]:
         try:
             _conn.execute(text(_stmt))

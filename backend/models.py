@@ -24,11 +24,13 @@ class Material(Base):
     name = Column(String, nullable=False)
     material_type = Column(String, nullable=False)  # steel_mild | corten | stainless | aluminum
     product_type = Column(String, nullable=False)   # sheet | tube | flat_bar | angle | channel | round_bar | other
+    finish = Column(String, nullable=False, default="brut")  # brut | dkp | galva | larme
     thickness_mm = Column(Float, nullable=True)
     dimensions = Column(JSON, nullable=True)        # {"width": 1000, "height": 2000} or {"a": 40, "b": 40}
     unit = Column(String, nullable=False)           # m2 | kg | ml
     purchase_price = Column(Float, nullable=True)   # null = unknown → use estimated price
     supplier = Column(String, nullable=True)
+    suffix = Column(String, nullable=True)          # custom label appended to auto-generated name
     notes = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

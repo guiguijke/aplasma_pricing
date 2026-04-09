@@ -9,11 +9,13 @@ class MaterialBase(BaseModel):
     name: str
     material_type: str       # steel_mild | corten | stainless | aluminum
     product_type: str        # sheet | tube | flat_bar | angle | channel | round_bar | other
+    finish: str = "brut"     # brut | dkp | galva | larme
     thickness_mm: Optional[float] = None
     dimensions: Optional[dict] = None
     unit: str                # m2 | kg | ml
     purchase_price: Optional[float] = None
     supplier: Optional[str] = None
+    suffix: Optional[str] = None
     notes: Optional[str] = None
 
 
