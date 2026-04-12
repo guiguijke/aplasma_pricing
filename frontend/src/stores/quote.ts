@@ -42,6 +42,7 @@ export const useQuoteStore = defineStore('quote', () => {
         material_id: null, material_name: '', material_type: 'steel_mild',
         product_type: 'sheet', thickness_mm: 3, dimensions: null,
         sheet_area_m2: 0, sheet_billing: 'partial', purchase_price: null,
+        cut_only: false,
       })
     } else if (type === 'welding') {
       Object.assign(defaults, { weld_type: 'tig', hours: 1, complexity: 1.0 })

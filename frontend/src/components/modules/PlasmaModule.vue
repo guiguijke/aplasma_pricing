@@ -11,7 +11,17 @@
     </div>
     <div class="module-card-body">
       <n-form label-placement="left" label-width="200">
-        <n-form-item label="Matériau">
+        <n-form-item label="Découpe seule">
+          <n-switch
+            :value="activity.cut_only as boolean"
+            @update:value="onCutOnlyToggle"
+          />
+          <span style="margin-left: 8px; font-size: 13px; color: #888">
+            Le client fournit la matière
+          </span>
+        </n-form-item>
+
+        <n-form-item v-if="!activity.cut_only" label="Matériau">
           <n-select
             :value="activity.material_id"
             :options="materialOptions"
@@ -39,34 +49,36 @@
           />
         </n-form-item>
 
-        <n-form-item label="Surface tôle (m²)">
-          <n-input-number
-            :value="activity.sheet_area_m2 as number"
-            :min="0"
-            :precision="3"
-            style="width: 100%"
-            @update:value="update('sheet_area_m2', $event)"
-          />
-        </n-form-item>
+        <template v-if="!activity.cut_only">
+          <n-form-item label="Surface tôle (m²)">
+            <n-input-number
+              :value="activity.sheet_area_m2 as number"
+              :min="0"
+              :precision="3"
+              style="width: 100%"
+              @update:value="update('sheet_area_m2', $event)"
+            />
+          </n-form-item>
 
-        <n-form-item label="Facturation tôle">
-          <n-radio-group
-            :value="activity.sheet_billing as string"
-            @update:value="update('sheet_billing', $event)"
-          >
-            <n-radio value="partial">Surface réelle utilisée</n-radio>
-            <n-radio value="full">Tôle complète</n-radio>
-          </n-radio-group>
-        </n-form-item>
+          <n-form-item label="Facturation tôle">
+            <n-radio-group
+              :value="activity.sheet_billing as string"
+              @update:value="update('sheet_billing', $event)"
+            >
+              <n-radio value="partial">Surface réelle utilisée</n-radio>
+              <n-radio value="full">Tôle complète</n-radio>
+            </n-radio-group>
+          </n-form-item>
 
-        <n-form-item label="Prix matière">
-          <n-tag v-if="activity.purchase_price != null" type="success">
-            {{ (activity.purchase_price as number).toFixed(2) }} € / {{ activity.unit || 'm²' }}
-          </n-tag>
-          <n-tag v-else type="warning">
-            Prix manquant — sera estimé par le poids
-          </n-tag>
-        </n-form-item>
+          <n-form-item label="Prix matière">
+            <n-tag v-if="activity.purchase_price != null" type="success">
+              {{ (activity.purchase_price as number).toFixed(2) }} €
+            </n-tag>
+            <n-tag v-else type="warning">
+              Prix manquant — sera estimé par le poids
+            </n-tag>
+          </n-form-item>
+        </template>
       </n-form>
     </div>
   </div>
@@ -88,6 +100,14 @@ const emit = defineEmits<{
 
 function update(key: string, value: unknown) {
   emit('update', { [key]: value })
+}
+
+function onCutOnlyToggle(val: boolean) {
+  emit('update', {
+    cut_only: val,
+    // Reset material fields when switching to cut_only
+    ...(val ? { material_id: null, material_name: '', purchase_price: null, sheet_area_m2: 0 } : {}),
+  })
 }
 
 const materialOptions = computed(() =>

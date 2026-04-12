@@ -33,17 +33,14 @@ def calculate(params: dict, config: dict) -> list[dict]:
 
     lines = []
 
-    # ── Material cost ────────────────────────────────────────────────────────
-    # purchase_price semantics:
-    #   sheets (m²)  → total price of the full sheet (TTC, auto-entrepreneur)
-    #   profiles (ml)→ price per meter
-    #   kg           → price per kg
+    # ── Material cost (skipped when client supplies material) ────────────────
+    cut_only = params.get("cut_only", False)
     sheet_area = params.get("sheet_area_m2", 0.0)
     purchase_price = params.get("purchase_price")
     material_margin = config.get("material_margin", 0.0)
     is_estimated = False
 
-    if sheet_area > 0:
+    if sheet_area > 0 and not cut_only:
         if purchase_price is not None:
             full_price = float(purchase_price)
             full_dims = params.get("dimensions", {"width": 1000, "height": 2000})
